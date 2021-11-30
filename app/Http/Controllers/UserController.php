@@ -1,8 +1,9 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\Student;
 use Illuminate\Http\Request;
+use File;
 
 class UserController extends Controller
 {
@@ -13,7 +14,8 @@ class UserController extends Controller
      */
     public function index()
     {
-        //
+        $data =  Student::orderBy('id','desc')->get();
+        return view('index',['data' => $data]);
     }
 
     /**
@@ -23,7 +25,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        //Redirect to create profile
+        //Redirect to create Student
         return view('create');
 
     }
@@ -55,12 +57,12 @@ class UserController extends Controller
         // dd($test);
 
         $data = $this->validate($request,[
-            "name" => ["required",'regex:/^([a-zA-Z]+)(\s[a-zA-Z]+)*$/'],
-            "email" => "required|email",
-            "password" => "required|confirmed|min:6",
-            "address" => "required|min:10",
-            "linkdin" => "required|url",
-            "gender" => "required",
+            "name" => ["required",'regex:/^([a-zA-Z]+)(\s[a-zA-Z]+)*$/',"max:50"],
+            "email" => "required|email|max:100",
+            "password" => "required|confirmed|min:6|max:100",
+            "address" => "required|max:255",
+            "linkdin" => "required|url|max:255",
+            "gender" => "required|max:20",
             'image' => 'required|image|mimes:jpg,png,jpeg|max:2048|dimensions:min_width=100,min_height=100,max_width=1000,max_height=1000'
 
         ]);
@@ -69,9 +71,14 @@ class UserController extends Controller
             $newImageName = md5(uniqid().'_'.time()).'.'.$request->image->extension();
             // move image to public folder named images
             $request->image->move(public_path('images'),$newImageName);
-    
-            // $request->file->store('public');
-            return view('profile',compact('data','newImageName'));
+            $data['password'] = bcrypt($data['password']);
+            $data['image']    = $newImageName;
+
+            $op = Student::create($data);
+            if($op){$message = "01 Row Inserted";}
+            else{$message ="Error, Please Try Again!";}
+            session()->flash('Message',$message);
+            return redirect(url('/students'));
         }
 
     }
@@ -95,7 +102,8 @@ class UserController extends Controller
      */
     public function edit($id)
     {
-        //
+        $data = Student::find($id);
+        return view('editStudent',['data' => $data]);
     }
 
     /**
@@ -107,7 +115,35 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $data = $this->validate($request,[
+            "name" => ["required",'regex:/^([a-zA-Z]+)(\s[a-zA-Z]+)*$/',"max:50"],
+            "email" => "required|email|max:100",
+            "password" => "required|confirmed|min:6|max:100",
+            "address" => "required|max:255",
+            "linkdin" => "required|url|max:255",
+            "gender" => "required|max:20",
+            'image' => 'required|image|mimes:jpg,png,jpeg|max:2048|dimensions:min_width=100,min_height=100,max_width=1000,max_height=1000'
+
+        ]);
+        if($request->isMethod('post')){
+           
+            $newImageName = md5(uniqid().'_'.time()).'.'.$request->image->extension();
+            // move image to public folder named images
+            $request->image->move(public_path('images'),$newImageName);
+            $data['password'] = bcrypt($data['password']);
+            $data['image']    = $newImageName;
+
+            $oldImage =  Student::where('id',$id)->value('image');
+            if(File::exists(public_path('images/'.$oldImage))){
+                File::delete(public_path('images/'.$oldImage));
+            }
+
+            $op = Student::where('id',$id)->update($data);
+            if($op){$message = "01 Row Updated";}
+            else{$message ="Error, Please Try Again!";}
+            session()->flash('Message',$message);
+            return redirect(url('/students'));
+        }
     }
 
     /**
@@ -118,6 +154,16 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $image =  Student::where('id',$id)->value('image');
+        
+        if(File::exists(public_path('images/'.$image))){
+            File::delete(public_path('images/'.$image));
+        }
+
+        $op = student::where('id',$id)->delete();
+        if($op){$message = "row Deleted";}
+        else{$message = "error";}
+        session()->flash('Message',$message);
+        return redirect(url('/students'));
     }
 }

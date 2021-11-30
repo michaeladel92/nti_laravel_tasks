@@ -13,10 +13,17 @@ use App\Http\Controllers\UserController;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', function () {return view('welcome');});
 
-// create user
-Route::get('createProfile',[UserController::class,'create']);
+// create Student
+Route::get('createStudent',[UserController::class,'create']);
 Route::post('store',[UserController::class,'store']);
+// display Student
+Route::get('students',[UserController::class,'index']);
+//Delete Student
+Route::get('deleteStudent/{id}',[UserController::class,'destroy']);
+// Edit Student
+Route::get('editStudent/{id}',[UserController::class,'edit']);
+Route::post('updateStudent/{id}',[UserController::class,'update']);
+
+
